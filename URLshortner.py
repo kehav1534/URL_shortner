@@ -8,12 +8,11 @@ import webbrowser, signal, time, os, threading, sys
 
 mydb = mysql.connector.connect(host= "localhost",
                                 user= "root",
-                                password = "Clashofclan1534")
+                                password = "Password")
 mycursor= mydb.cursor()
 mycursor.execute("USE urlshortner;")
 app = Flask(__name__)
 
-last_request_time = time.time()
 
 def generate_random_string(length = 15):
         exist = True
@@ -30,10 +29,6 @@ def generate_random_string(length = 15):
 
 @app.route('/', methods=['GET', 'POST'])
 def Home():
-    global last_request_time
-    last_request_time = time.time() 
-
-
     if request.method == 'POST':
         
         url = request.form['link']
@@ -50,9 +45,7 @@ def Home():
             except Exception as e:
                 return "Value exist.."
 
-    ###   Add link page here... ##
-    ## NO editing the link available..... 
-    # Delete the link is fine for now...
+
     mycursor.execute("SELECT * FROM url;")
     urls = mycursor.fetchall()
     code=''
@@ -74,24 +67,12 @@ def Home():
 
 @app.route('/add', methods=['GET', 'POST'])
 def add():
-    if request.method=="POST":
-        
-        link:str = request.json['custom']
-        mycursor.execute("SELECT ShortURL FROM url WHERE ShortURL = %s;", [link])
-        data = mycursor.fetchall()
-        global last_request_time
-        last_request_time = time.time()
-
-        if data:
-            return jsonify({'exists': True})
-        return jsonify({'exists': False})
-
-
+  #can add editing here..
     return render_template("form.htm", link = '/')
 
 @app.route('/add/<shortURL>', methods=['GET', 'POST'])
 def edit(shortURL):
-    global last_request_time
+  
     if request.method == 'POST':
         url = request.form['link']
         custom = request.form['custom']
@@ -106,69 +87,46 @@ def edit(shortURL):
                 mycursor.execute("INSERT INTO url VALUES(%s, %s);", [custom, url])
                 mydb.commit()
                 
-                last_request_time = time.time()
+
                 return redirect(url_for('Home'))
             except Exception as e:
-                last_request_time = time.time()
                 return "Value exist.."
 
 
     mycursor.execute("SELECT * FROM url WHERE ShortURL = %s", [shortURL])
     data = mycursor.fetchone()
-    
-    
-    
+        
     if data:
 
-        last_request_time = time.time()
         return render_template("form.htm", short=data[0], long=data[1], link=f'/add/{data[0]}')
     else:
         last_request_time = time.time()
-        return "<H2 align='center'>404: NO LINK FOUND.</H2>"
+        return "<H2 align='center'>404: NO LINK FOUND.</H2><br><br><br><br><h3 align='center'><a href='/'>Home</a></hr>"
 
 
 @app.route('/<link>')
 def link(link):
+  #Receives the request to open the short links.
     mycursor.execute("SELECT * FROM url WHERE ShortURL = %s;", [link])
     rows= mycursor.fetchone()
-    global last_request_time
-    last_request_time = time.time()
+
     if rows is not None and len(rows) > 1:
         return render_template("redirect.html", external_link = rows[1])
     else:
-        return "<h1 align='center'>Link do not exist</h1>"
+        return "<h1 align='center'>Link do not exist</h1><br><br><br><br><h3 align='center'><a href='/'>Home</a></hr>"
     
 
 @app.route('/del', methods=['POST', 'GET'])
 def delete():
+  #To delete certain short links from home page.
     if request.method == 'POST':
         btn_value = request.form.get('delete')
         mycursor.execute("DELETE FROM url WHERE ShortURL = %s;", [btn_value])
         mydb.commit()
-    global last_request_time
-    last_request_time = time.time()
+
     return redirect(url_for('Home'))
     
 
-# Define the idle timeout in seconds (e.g., 300 seconds = 5 minutes)
-IDLE_TIMEOUT = 600
-# Function to check if the server should be shut down
-def check_idle():
-    global last_request_time
-    while True:
-        if time.time() - last_request_time > IDLE_TIMEOUT:
-            print("Server is idle for too long. Shutting down...")
-            os.kill(os.getpid(), signal.SIGINT)
-        time.sleep(60)  # Check every 60 seconds
-
 
 if __name__=="__main__":
-    if len(sys.argv) > 1:
-        idle_thread = threading.Thread(target=check_idle)
-        idle_thread.daemon = True
-        idle_thread.start()
-        last_request_time = time.time()
-        webbrowser.open('http://localhost:8005/')
-        app.run(port=8005)
-    else:
-        os.system("C:/Users/Keshav^ Maheshwari/Desktop/try/Reminder_vbs.vbs")
+    app.run(port=8005, debug=True)
