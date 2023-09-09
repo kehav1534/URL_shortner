@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>External Link Redirect</title>
+</head>
+<body>
+    <script>
+        
+        // Function to ensure the external link has a valid protocol
+        function redirectToExternalLink() {
+            var externalLink = "{{ external_link }}";
+            if (!externalLink.startsWith('http://') && !externalLink.startsWith('https://')) {
+                externalLink = 'http://' + externalLink;
+            }
+            window.location.href = externalLink;
+        }
+        
+
+        // Call the function to redirect
+        redirectToExternalLink();
+    </script>
+</body>
+</html>
